@@ -8,6 +8,7 @@
 #include <Color.h>
 #include <Point.h>
 #include <Line.h>
+#include <Polygon.h>
 
 // SDL stuff
 SDL_Window *pWindow = nullptr;
@@ -18,6 +19,7 @@ int offset = 10;
 
 // Global state
 std::vector<Line> lines;
+std::vector<Polygon> polygons;
 
 void clear()
 {
@@ -52,10 +54,11 @@ void render()
     clear();
 
     for (Line line : lines)
-    {
         line.draw();
-    }
-    // Add the other rendering code here
+
+    for (Polygon polygon : polygons)
+        polygon.draw();
+
 
     SDL_UpdateWindowSurface(pWindow);
 }
@@ -66,6 +69,9 @@ int main(int argc, char *args[])
     // Testing shape classes
     Line line = Line(Point(10, 10), Point(100, 100), Color(255, 0, 0));
     lines.push_back(line);
+
+    Polygon polygon = Polygon({Point(200, 200), Point(300, 200), Point(300, 300), Point(200, 300), Point(150, 250) }, Color(0, 255, 0));
+    polygons.push_back(polygon);
 
     if (SDL_Init(SDL_INIT_EVERYTHING) >= 0)
     {

@@ -11,6 +11,7 @@ set(SOURCES
     src/Context.cpp
     src/Point.cpp
     src/Line.cpp
+    src/Polygon.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
