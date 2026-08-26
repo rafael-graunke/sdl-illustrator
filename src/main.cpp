@@ -9,6 +9,7 @@
 #include <Point.h>
 #include <Line.h>
 #include <Polygon.h>
+#include <Circle.h>
 
 // SDL stuff
 SDL_Window *pWindow = nullptr;
@@ -20,6 +21,7 @@ int offset = 10;
 // Global state
 std::vector<Line> lines;
 std::vector<Polygon> polygons;
+std::vector<Circle> circles;
 
 void clear()
 {
@@ -59,6 +61,8 @@ void render()
     for (Polygon polygon : polygons)
         polygon.draw();
 
+    for (Circle circle : circles)
+        circle.draw();
 
     SDL_UpdateWindowSurface(pWindow);
 }
@@ -72,6 +76,9 @@ int main(int argc, char *args[])
 
     Polygon polygon = Polygon({Point(200, 200), Point(300, 200), Point(300, 300), Point(200, 300), Point(150, 250) }, Color(0, 255, 0));
     polygons.push_back(polygon);
+
+    Circle circle = Circle(Point(400, 400), 50, Color(0, 0, 255));
+    circles.push_back(circle);
 
     if (SDL_Init(SDL_INIT_EVERYTHING) >= 0)
     {
