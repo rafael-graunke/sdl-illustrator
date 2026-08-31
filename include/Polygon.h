@@ -16,6 +16,7 @@ class Polygon
         void addVertex(Point vertex);
         void draw();
         virtual ~Polygon();
+        Point getFirstVertex();
 
     private:
         std::vector<Point> vertices;

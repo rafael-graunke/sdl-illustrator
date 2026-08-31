@@ -14,20 +14,30 @@ void Polygon::setColor(Color color)
 
 void Polygon::draw()
 {
+    if (this->vertices.size() < 2)
+        return;
+
     Point primeiro = this->vertices.front();
     Point anterior = this->vertices.front();
     Point atual;
 
-    int i = 0;
-    for (Point p : this->vertices)
+    for (int i = 0; i < this->vertices.size() - 1; i++)
     {
-        if (i > 0)
-        {
-            atual = p;
-            Line(anterior, atual, this->color).draw();
-            anterior = atual;
-        }
-        i++;
+        Point current = this->vertices[i];
+        Point next = this->vertices[i + 1];
+        Line(current, next, this->color).draw();
     }
-    Line(atual, primeiro, this->color).draw();
+}
+
+void Polygon::addVertex(Point vertex)
+{
+    this->vertices.push_back(vertex);
+}
+
+Point Polygon::getFirstVertex()
+{
+    if (!this->vertices.empty())
+    {
+        return this->vertices.front();
+    }
 }
