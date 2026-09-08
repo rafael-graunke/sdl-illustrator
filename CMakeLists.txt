@@ -13,6 +13,7 @@ set(SOURCES
     src/Line.cpp
     src/Polygon.cpp
     src/Circle.cpp
+    src/Bezier.cpp
     src/drawing.cpp
 )
 

@@ -10,10 +10,10 @@
 #include <Line.h>
 #include <Polygon.h>
 #include <Circle.h>
+#include <Bezier.h>
 
 // SDL stuff
 SDL_Window *pWindow = nullptr;
-SDL_Renderer *pRenderer = nullptr;
 SDL_Surface *window_surface = nullptr;
 
 int offset = 10;
@@ -21,6 +21,7 @@ int offset = 10;
 // Global state
 std::vector<Line> lines;
 std::vector<Polygon> polygons;
+std::vector<Bezier> beziers;
 std::vector<Circle> circles;
 
 void clear()
@@ -179,6 +180,92 @@ void renderPolygonPreview()
     }
 }
 
+
+bool drawBezier = false;
+std::vector<Point> pendingPoints;
+int draggingBezierIndex = -1;
+int draggingPointIndex = -1;
+
+void bezierPlacingHandler(SDL_Event event)
+{
+    if (!drawBezier)
+        return;
+
+    if (draggingPointIndex != -1)
+        return; // clique foi pra iniciar um drag, nao pra marcar ponto novo
+
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+    {
+        pendingPoints.push_back(Point(event.button.x, event.button.y));
+
+        if (pendingPoints.size() == 4)
+        {
+            Bezier bezier = Bezier(pendingPoints, Color(0, 0, 0));
+            beziers.push_back(bezier);
+            pendingPoints.clear();
+        }
+    }
+}
+
+void bezierDragHandler(SDL_Event event)
+{
+    if (!drawBezier)
+        return;
+
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+    {
+        Point mouse = Point(event.button.x, event.button.y);
+
+        for (size_t i = 0; i < beziers.size(); ++i)
+        {
+            int index = beziers[i].nearestPoint(mouse, 10);
+            if (index != -1)
+            {
+                draggingBezierIndex = i;
+                draggingPointIndex = index;
+                break;
+            }
+        }
+    }
+
+    if (event.type == SDL_MOUSEMOTION && draggingBezierIndex != -1)
+    {
+        beziers[draggingBezierIndex].setPoint(draggingPointIndex, Point(event.motion.x, event.motion.y));
+    }
+
+    if (event.type == SDL_MOUSEBUTTONUP)
+    {
+        draggingBezierIndex = -1;
+        draggingPointIndex = -1;
+    }
+}
+
+void renderBezierPreview()
+{
+    if (!drawBezier)
+        return;
+
+    for (size_t i = 0; i + 1 < pendingPoints.size(); ++i)
+    {
+        Line line = Line(pendingPoints[i], pendingPoints[i + 1], Color(0, 0, 0));
+        line.draw();
+    }
+}
+
+void renderBezierGuides()
+{
+    if (draggingBezierIndex == -1)
+        return;
+
+    std::vector<Point> points = beziers[draggingBezierIndex].getControlPoints();
+
+    for (size_t i = 0; i + 1 < points.size(); ++i)
+    {
+        Line guide = Line(points[i], points[i + 1], Color(180, 180, 180));
+        guide.draw();
+    }
+}
+
 void update()
 {
     SDL_Event event;
@@ -190,6 +277,8 @@ void update()
         drawLineHandler(event);
         drawRectangleHandler(event);
         drawPolygonHandler(event);
+        bezierDragHandler(event);
+        bezierPlacingHandler(event);
 
         if (event.type == SDL_QUIT)
         {
@@ -211,9 +300,14 @@ void render()
     for (Circle circle : circles)
         circle.draw();
 
+    for (Bezier bezier : beziers)
+        bezier.draw();
+
     renderLinePreview();
     renderRectanglePreview();
     renderPolygonPreview();
+    renderBezierPreview();
+    renderBezierGuides();
     SDL_UpdateWindowSurface(pWindow);
 }
 
@@ -230,6 +324,9 @@ int main(int argc, char *args[])
     Circle circle = Circle(Point(400, 400), 50, Color(0, 0, 255));
     circles.push_back(circle);
 
+    Bezier bezier = Bezier({Point(500, 500), Point(550, 450), Point(600, 550), Point(650, 500)}, Color(255, 255, 0));
+    beziers.push_back(bezier);
+
     if (SDL_Init(SDL_INIT_EVERYTHING) >= 0)
     {
         pWindow = SDL_CreateWindow("SDL Illustrator",
@@ -239,10 +336,8 @@ int main(int argc, char *args[])
 
         if (pWindow != 0)
         {
-            pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
             window_surface = SDL_GetWindowSurface(pWindow);
             Context *context = Context::getInstance();
-            context->setRenderer(pRenderer);
             context->setWindowSurface(window_surface);
         }
     }
