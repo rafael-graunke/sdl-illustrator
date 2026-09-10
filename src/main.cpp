@@ -25,6 +25,17 @@ std::vector<Polygon> polygons;
 std::vector<Bezier> beziers;
 std::vector<Circle> circles;
 
+
+enum class ToolType
+{
+    Line,
+    Rectangle,
+    Polygon,
+    Circle,
+    Bezier
+};
+ToolType currentTool = ToolType::Line;
+
 void clear()
 {
     Line l = Line();
@@ -38,13 +49,12 @@ void clear()
     }
 }
 
-bool drawLine = false;
 Point *firstPoint = nullptr;
 Point *secondPoint = nullptr;
 
 void drawLineHandler(SDL_Event event)
 {
-    if (!drawLine)
+    if (currentTool != ToolType::Line)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -74,7 +84,7 @@ void drawLineHandler(SDL_Event event)
 
 void renderLinePreview()
 {
-    if (!drawLine)
+    if (currentTool != ToolType::Line)
         return;
 
     if (firstPoint != nullptr && secondPoint != nullptr)
@@ -84,11 +94,9 @@ void renderLinePreview()
     }
 }
 
-bool drawRectangle = false;
-
 void drawRectangleHandler(SDL_Event event)
 {
-    if (!drawRectangle)
+    if (currentTool != ToolType::Rectangle)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -107,7 +115,7 @@ void drawRectangleHandler(SDL_Event event)
         if (firstPoint != nullptr)
         {
             Polygon rectangle = Polygon(
-                {*firstPoint, Point(firstPoint->getX(), event.button.y), Point(event.button.x, event.button.y), Point(event.button.x, firstPoint->getY())},
+                {*firstPoint, Point(firstPoint->getX(), event.button.y), Point(event.button.x, event.button.y), Point(event.button.x, firstPoint->getY()), *firstPoint},
                 Color(0, 0, 0));
             polygons.push_back(rectangle);
             delete firstPoint;
@@ -120,13 +128,13 @@ void drawRectangleHandler(SDL_Event event)
 
 void renderRectanglePreview()
 {
-    if (!drawRectangle)
+    if (currentTool != ToolType::Rectangle)
         return;
 
     if (firstPoint != nullptr && secondPoint != nullptr)
     {
         Polygon rectangle = Polygon(
-            {*firstPoint, Point(firstPoint->getX(), secondPoint->getY()), *secondPoint, Point(secondPoint->getX(), firstPoint->getY())},
+            {*firstPoint, Point(firstPoint->getX(), secondPoint->getY()), *secondPoint, Point(secondPoint->getX(), firstPoint->getY()), *firstPoint},
             Color(0, 0, 0)
         );
         rectangle.draw();
@@ -134,11 +142,9 @@ void renderRectanglePreview()
 }
 
 // ====== Circle
-bool drawCircle = true;
-
 void drawCircleHandler(SDL_Event event)
 {
-    if (!drawCircle)
+    if (currentTool != ToolType::Circle)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -175,7 +181,7 @@ void drawCircleHandler(SDL_Event event)
 
 void renderCirclePreview()
 {
-    if (!drawCircle)
+    if (currentTool != ToolType::Circle)
         return;
 
     if (firstPoint != nullptr && secondPoint != nullptr)
@@ -187,12 +193,11 @@ void renderCirclePreview()
 }
 // ======
 
-bool drawPolygon = false;
 Polygon currentPolygon = Polygon();
 
 void drawPolygonHandler(SDL_Event event)
 {
-    if (!drawPolygon)
+    if (currentTool != ToolType::Polygon)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
@@ -223,7 +228,7 @@ void drawPolygonHandler(SDL_Event event)
 
 void renderPolygonPreview()
 {
-    if (!drawPolygon)
+    if (currentTool != ToolType::Polygon)
         return;
 
     currentPolygon.draw();
@@ -236,14 +241,13 @@ void renderPolygonPreview()
 }
 
 
-bool drawBezier = false;
 std::vector<Point> pendingPoints;
 int draggingBezierIndex = -1;
 int draggingPointIndex = -1;
 
 void bezierPlacingHandler(SDL_Event event)
 {
-    if (!drawBezier)
+    if (currentTool != ToolType::Bezier)
         return;
 
     if (draggingPointIndex != -1)
@@ -264,7 +268,7 @@ void bezierPlacingHandler(SDL_Event event)
 
 void bezierDragHandler(SDL_Event event)
 {
-    if (!drawBezier)
+    if (currentTool != ToolType::Bezier)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
@@ -297,7 +301,7 @@ void bezierDragHandler(SDL_Event event)
 
 void renderBezierPreview()
 {
-    if (!drawBezier)
+    if (currentTool != ToolType::Bezier)
         return;
 
     for (size_t i = 0; i + 1 < pendingPoints.size(); ++i)
@@ -335,6 +339,31 @@ void update()
         drawCircleHandler(event);
         bezierDragHandler(event);
         bezierPlacingHandler(event);
+
+
+        if(event.type == SDL_KEYDOWN)
+        {
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_l:
+                currentTool = ToolType::Line;
+                break;
+            case SDLK_r:
+                currentTool = ToolType::Rectangle;
+                break;
+            case SDLK_p:
+                currentTool = ToolType::Polygon;
+                break;
+            case SDLK_c:
+                currentTool = ToolType::Circle;
+                break;
+            case SDLK_b:
+                currentTool = ToolType::Bezier;
+                break;
+            default:
+                break;
+            }
+        }
 
         if (event.type == SDL_QUIT)
         {
