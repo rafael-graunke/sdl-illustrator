@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
+#include <cstdint>
 
 #include <Context.h>
 #include <Color.h>
@@ -35,6 +36,115 @@ enum class ToolType
     Bezier
 };
 ToolType currentTool = ToolType::Line;
+
+struct ToolboxItem
+{
+    ToolType tool;
+    int x,y,w=60,h=60;
+};
+
+std::vector<ToolboxItem> toolboxItems = {
+    {ToolType::Line, 10, 10},
+    {ToolType::Rectangle, 10, 80},
+    {ToolType::Polygon, 10, 150},
+    {ToolType::Circle, 10, 220},
+    {ToolType::Bezier, 10, 290}
+};
+
+// fonte bitmap 5x7: cada linha da letra e um byte, cada bit e um pixel (1 = aceso, 0 = apagado)
+//https://voxelmanip.se/2025/01/16/drawing-text-in-the-sdl-renderer-without-sdl-ttf/
+uint8_t letraL[7] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111};
+uint8_t letraR[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001};
+uint8_t letraP[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000};
+uint8_t letraC[7] = {0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111};
+uint8_t letraB[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110};
+
+void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int r, int g, int b)
+{
+    uint8_t *letra;
+
+    switch (tool)
+    {
+        case ToolType::Line: letra = letraL; break;
+        case ToolType::Rectangle: letra = letraR; break;
+        case ToolType::Polygon: letra = letraP; break;
+        case ToolType::Circle: letra = letraC; break;
+        case ToolType::Bezier: letra = letraB; break;
+    }
+
+    for (int row = 0; row < 7; row++)
+    {
+        for (int col = 0; col < 5; col++)
+        {
+            // testa o bit da coluna (5 bits, do mais significativo pro menos significativo)
+            int bit = (letra[row] >> (4 - col)) & 1;
+            if (bit == 0)
+                continue;
+
+            for (int sy = 0; sy < scale; sy++)
+            {
+                for (int sx = 0; sx < scale; sx++)
+                {
+                    l.setPixel(originX + col * scale + sx, originY + row * scale + sy, r, g, b);
+                }
+            }
+        }
+    }
+}
+
+void drawToolbox()
+{
+    Line l = Line();
+
+    for (ToolboxItem item : toolboxItems)
+    {
+        int r, g, b;
+
+        if (item.tool == currentTool)
+        {
+            r = 230; g = 200; b = 0;
+        }
+        else
+        {
+            r = 180; g = 180; b = 180;
+        }
+
+        for (int x = item.x; x < item.x + item.w; x++)
+        {
+            for (int y = item.y; y < item.y + item.h; y++)
+            {
+                l.setPixel(x, y, r, g, b);
+            }
+        }
+
+        int scale = 4;
+        int glyphW = 5 * scale;
+        int glyphH = 7 * scale;
+        int gx = item.x + (item.w - glyphW) / 2;
+        int gy = item.y + (item.h - glyphH) / 2;
+        drawGlyph(l, item.tool, gx, gy, scale, 30, 30, 30);
+    }
+}
+
+bool toolboxClickHandler(SDL_Event event)
+{
+    if (event.type != SDL_MOUSEBUTTONDOWN || event.button.button != SDL_BUTTON_LEFT)
+        return false;
+
+    int mx = event.button.x;
+    int my = event.button.y;
+
+    for (ToolboxItem item : toolboxItems)
+    {
+        if (mx >= item.x && mx < item.x + item.w && my >= item.y && my < item.y + item.h)
+        {
+            currentTool = item.tool;
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void clear()
 {
@@ -333,6 +443,9 @@ void update()
     {
         // selectedTool->handleEvent(event);
 
+        if (toolboxClickHandler(event))
+            continue;
+
         drawLineHandler(event);
         drawRectangleHandler(event);
         drawPolygonHandler(event);
@@ -394,25 +507,12 @@ void render()
     renderCirclePreview();
     renderBezierPreview();
     renderBezierGuides();
+    drawToolbox();
     SDL_UpdateWindowSurface(pWindow);
 }
 
 int main(int argc, char *args[])
 {
-
-    // Testing shape classes
-    Line line = Line(Point(10, 10), Point(100, 100), Color(255, 0, 0));
-    lines.push_back(line);
-
-    Polygon polygon = Polygon({Point(200, 200), Point(300, 200), Point(300, 300), Point(200, 300), Point(150, 250)}, Color(0, 255, 0));
-    polygons.push_back(polygon);
-
-    Circle circle = Circle(Point(400, 400), 50, Color(0, 0, 255));
-    circles.push_back(circle);
-
-    Bezier bezier = Bezier({Point(500, 500), Point(550, 450), Point(600, 550), Point(650, 500)}, Color(255, 255, 0));
-    beziers.push_back(bezier);
-
     if (SDL_Init(SDL_INIT_EVERYTHING) >= 0)
     {
         pWindow = SDL_CreateWindow("SDL Illustrator",
