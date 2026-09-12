@@ -33,7 +33,8 @@ enum class ToolType
     Rectangle,
     Polygon,
     Circle,
-    Bezier
+    Bezier,
+    Fill
 };
 ToolType currentTool = ToolType::Line;
 
@@ -48,7 +49,8 @@ std::vector<ToolboxItem> toolboxItems = {
     {ToolType::Rectangle, 10, 80},
     {ToolType::Polygon, 10, 150},
     {ToolType::Circle, 10, 220},
-    {ToolType::Bezier, 10, 290}
+    {ToolType::Bezier, 10, 290},
+    {ToolType::Fill, 10, 360}
 };
 
 // fonte bitmap 5x7: cada linha da letra e um byte, cada bit e um pixel (1 = aceso, 0 = apagado)
@@ -58,6 +60,7 @@ uint8_t letraR[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b100
 uint8_t letraP[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000};
 uint8_t letraC[7] = {0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111};
 uint8_t letraB[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110};
+uint8_t letraF[7] = {0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000};
 
 void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int r, int g, int b)
 {
@@ -70,6 +73,7 @@ void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int 
         case ToolType::Polygon: letra = letraP; break;
         case ToolType::Circle: letra = letraC; break;
         case ToolType::Bezier: letra = letraB; break;
+        case ToolType::Fill: letra = letraF; break;
     }
 
     for (int row = 0; row < 7; row++)
@@ -435,6 +439,36 @@ void renderBezierGuides()
     }
 }
 
+void fillHandler(SDL_Event event)
+{
+    if (currentTool != ToolType::Fill)
+        return;
+
+    if (event.type != SDL_MOUSEBUTTONDOWN || event.button.button != SDL_BUTTON_LEFT)
+        return;
+
+    Point clicked = Point(event.button.x, event.button.y);
+    Color fillColor = Color(220, 40, 40);
+
+    for (int i = (int)circles.size() - 1; i >= 0; i--)
+    {
+        if (circles[i].contains(clicked))
+        {
+            circles[i].setFill(fillColor);
+            return;
+        }
+    }
+
+    for (int i = (int)polygons.size() - 1; i >= 0; i--)
+    {
+        if (polygons[i].contains(clicked))
+        {
+            polygons[i].setFill(fillColor);
+            return;
+        }
+    }
+}
+
 void update()
 {
     SDL_Event event;
@@ -452,6 +486,7 @@ void update()
         drawCircleHandler(event);
         bezierDragHandler(event);
         bezierPlacingHandler(event);
+        fillHandler(event);
 
 
         if(event.type == SDL_KEYDOWN)
@@ -469,6 +504,9 @@ void update()
                 break;
             case SDLK_c:
                 currentTool = ToolType::Circle;
+                break;
+            case SDLK_f:
+                currentTool = ToolType::Fill;
                 break;
             case SDLK_b:
                 currentTool = ToolType::Bezier;

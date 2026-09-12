@@ -17,9 +17,14 @@ class Circle
         void draw();
         virtual ~Circle();
 
+        bool contains(Point p);
+        void setFill(Color fillColor);
+
     private:
         Point center;
         int radius;
         Color color;
+        bool filled = false;
+        Color fillColor = Color(0, 0, 0);
 
 };

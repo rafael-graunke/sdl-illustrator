@@ -18,8 +18,13 @@ class Polygon
         virtual ~Polygon();
         Point getFirstVertex();
 
+        bool contains(Point p);
+        void setFill(Color fillColor);
+
     private:
         std::vector<Point> vertices;
         Color color;
+        bool filled = false;
+        Color fillColor = Color(0, 0, 0);
 
 };
