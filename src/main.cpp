@@ -11,6 +11,7 @@
 #include <Polygon.h>
 #include <Circle.h>
 #include <Bezier.h>
+#include <cmath>
 
 // SDL stuff
 SDL_Window *pWindow = nullptr;
@@ -132,7 +133,61 @@ void renderRectanglePreview()
     }
 }
 
-bool drawPolygon = true;
+// ====== Circle
+bool drawCircle = true;
+
+void drawCircleHandler(SDL_Event event)
+{
+    if (!drawCircle)
+        return;
+
+    if (event.type == SDL_MOUSEBUTTONDOWN)
+    {
+        firstPoint = new Point(event.button.x, event.button.y);
+    }
+
+    if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
+    {
+        delete secondPoint;
+        secondPoint = new Point(event.motion.x, event.motion.y);
+    }
+
+    if (event.type == SDL_MOUSEBUTTONUP)
+    {
+        if (firstPoint != nullptr)
+        {
+            // calculatging radius
+            int radius = sqrt(pow(secondPoint->getX() - firstPoint->getX(), 2) + pow(secondPoint->getY() - firstPoint->getY(), 2));
+
+            Circle circle = Circle(
+                Point(firstPoint->getX(), firstPoint->getY()),
+                radius,
+                Color(0, 0, 0)
+            );
+            circles.push_back(circle);
+            delete firstPoint;
+            firstPoint = nullptr;
+            delete secondPoint;
+            secondPoint = nullptr;
+        }
+    }
+}
+
+void renderCirclePreview()
+{
+    if (!drawCircle)
+        return;
+
+    if (firstPoint != nullptr && secondPoint != nullptr)
+    {
+        int radius = sqrt(pow(secondPoint->getX() - firstPoint->getX(), 2) + pow(secondPoint->getY() - firstPoint->getY(), 2));
+        Circle circle = Circle(*firstPoint, radius, Color(0, 0, 0));
+        circle.draw();
+    }
+}
+// ======
+
+bool drawPolygon = false;
 Polygon currentPolygon = Polygon();
 
 void drawPolygonHandler(SDL_Event event)
@@ -277,6 +332,7 @@ void update()
         drawLineHandler(event);
         drawRectangleHandler(event);
         drawPolygonHandler(event);
+        drawCircleHandler(event);
         bezierDragHandler(event);
         bezierPlacingHandler(event);
 
@@ -306,6 +362,7 @@ void render()
     renderLinePreview();
     renderRectanglePreview();
     renderPolygonPreview();
+    renderCirclePreview();
     renderBezierPreview();
     renderBezierGuides();
     SDL_UpdateWindowSurface(pWindow);
