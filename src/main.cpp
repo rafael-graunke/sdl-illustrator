@@ -17,6 +17,7 @@
 // SDL stuff
 SDL_Window *pWindow = nullptr;
 SDL_Surface *window_surface = nullptr;
+SDL_Surface *cleanCanvas = nullptr;
 
 int offset = 10;
 
@@ -161,6 +162,35 @@ void clear()
             l.setPixel(x, y, 255, 255, 255);
         }
     }
+}
+
+void saveToFile()
+{
+    if (!cleanCanvas)
+        return;
+
+    char fileName[256];
+    int version = 0;
+
+    // versioning
+    while (true)
+    {
+        if (version == 0)
+            snprintf(fileName, sizeof(fileName), "drawing.bmp");
+        else
+            snprintf(fileName, sizeof(fileName), "drawing%d.bmp", version);
+
+        FILE *file = fopen(fileName, "rb");
+        if (file == nullptr) {break;}
+
+        fclose(file);
+        version = version + 1;
+    }
+
+    if (SDL_SaveBMP(cleanCanvas, fileName) != 0)
+        printf("erro ao salvar: %s\n", SDL_GetError());
+    else
+        printf("Imagem salva em %s\n", fileName);
 }
 
 Point *firstPoint = nullptr;
@@ -491,6 +521,12 @@ void update()
 
         if(event.type == SDL_KEYDOWN)
         {
+
+            if (event.key.keysym.sym == SDLK_s)
+            {
+                saveToFile();
+            }
+
             switch (event.key.keysym.sym)
             {
             case SDLK_l:
@@ -545,6 +581,11 @@ void render()
     renderCirclePreview();
     renderBezierPreview();
     renderBezierGuides();
+
+    if (cleanCanvas)
+        SDL_FreeSurface(cleanCanvas);
+    cleanCanvas = SDL_ConvertSurface(window_surface, window_surface->format, 0);
+
     drawToolbox();
     SDL_UpdateWindowSurface(pWindow);
 }
