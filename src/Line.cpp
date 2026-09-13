@@ -376,3 +376,31 @@ void Line::bresenham(int x1, int y1, int x2, int y2, int r, int g, int b)
         }
     }
 }
+
+int Line::getMinX() {
+    if (this->start.getX() > this->end.getX())
+        return this->end.getX();
+
+    return this->start.getX();
+};
+
+int Line::getMaxX() {
+    if (this->start.getX() > this->end.getX())
+        return this->start.getX();
+
+    return this->end.getX();
+};
+
+int Line::getMinY() {
+    if (this->start.getY() > this->end.getY())
+        return this->end.getY();
+
+    return this->start.getY();
+};
+
+int Line::getMaxY() {
+    if (this->start.getY() > this->end.getY())
+        return this->start.getY();
+
+    return this->end.getY();
+};

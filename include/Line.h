@@ -10,6 +10,10 @@ class Line
         Line();
         Line(Point start, Point end, Color color);
         Line(Point start, Point end, Color color, int antialias);
+        int getMinX();
+        int getMaxX();
+        int getMinY();
+        int getMaxY();
         void setPixel(int x, int y, int r, int g, int b);
         void draw();
         virtual ~Line();
