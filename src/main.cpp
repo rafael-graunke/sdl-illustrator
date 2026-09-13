@@ -193,6 +193,21 @@ void saveToFile()
         printf("Imagem salva em %s\n", fileName);
 }
 
+// trava x,y dentro dos limites da tela (0..w-1, 0..h-1), pra nenhuma forma
+// nascer com coordenada absurda quando o mouse eh arrastado pra fora da janela
+Point clampPoint(int x, int y)
+{
+    SDL_Surface *window_surface = Context::getInstance()->getWindowSurface();
+
+    if (x < 0) x = 0;
+    if (x >= window_surface->w) x = window_surface->w - 1;
+
+    if (y < 0) y = 0;
+    if (y >= window_surface->h) y = window_surface->h - 1;
+
+    return Point(x, y);
+}
+
 Point *firstPoint = nullptr;
 Point *secondPoint = nullptr;
 
@@ -203,20 +218,20 @@ void drawLineHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
     {
-        firstPoint = new Point(event.button.x, event.button.y);
+        firstPoint = new Point(clampPoint(event.button.x, event.button.y));
     }
 
     if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
     {
         delete secondPoint;
-        secondPoint = new Point(event.motion.x, event.motion.y);
+        secondPoint = new Point(clampPoint(event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONUP)
     {
         if (firstPoint != nullptr)
         {
-            Line line = Line(*firstPoint, Point(event.button.x, event.button.y), Color(0, 0, 0));
+            Line line = Line(*firstPoint, clampPoint(event.button.x, event.button.y), Color(0, 0, 0));
             lines.push_back(line);
             delete firstPoint;
             firstPoint = nullptr;
@@ -245,21 +260,22 @@ void drawRectangleHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
     {
-        firstPoint = new Point(event.button.x, event.button.y);
+        firstPoint = new Point(clampPoint(event.button.x, event.button.y));
     }
 
     if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
     {
         delete secondPoint;
-        secondPoint = new Point(event.motion.x, event.motion.y);
+        secondPoint = new Point(clampPoint(event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONUP)
     {
         if (firstPoint != nullptr)
         {
+            Point releasePoint = clampPoint(event.button.x, event.button.y);
             Polygon rectangle = Polygon(
-                {*firstPoint, Point(firstPoint->getX(), event.button.y), Point(event.button.x, event.button.y), Point(event.button.x, firstPoint->getY()), *firstPoint},
+                {*firstPoint, Point(firstPoint->getX(), releasePoint.getY()), releasePoint, Point(releasePoint.getX(), firstPoint->getY()), *firstPoint},
                 Color(0, 0, 0));
             polygons.push_back(rectangle);
             delete firstPoint;
@@ -293,13 +309,13 @@ void drawCircleHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEBUTTONDOWN)
     {
-        firstPoint = new Point(event.button.x, event.button.y);
+        firstPoint = new Point(clampPoint(event.button.x, event.button.y));
     }
 
     if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
     {
         delete secondPoint;
-        secondPoint = new Point(event.motion.x, event.motion.y);
+        secondPoint = new Point(clampPoint(event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONUP)
@@ -348,14 +364,14 @@ void drawPolygonHandler(SDL_Event event)
     {
         if (firstPoint != nullptr)
             delete firstPoint;
-        firstPoint = new Point(event.button.x, event.button.y);
+        firstPoint = new Point(clampPoint(event.button.x, event.button.y));
         currentPolygon.addVertex(*firstPoint);
     }
 
     if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
     {
         delete secondPoint;
-        secondPoint = new Point(event.motion.x, event.motion.y);
+        secondPoint = new Point(clampPoint(event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT)
@@ -399,7 +415,7 @@ void bezierPlacingHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
     {
-        pendingPoints.push_back(Point(event.button.x, event.button.y));
+        pendingPoints.push_back(clampPoint(event.button.x, event.button.y));
 
         if (pendingPoints.size() == 4)
         {
@@ -417,7 +433,7 @@ void bezierDragHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
     {
-        Point mouse = Point(event.button.x, event.button.y);
+        Point mouse = clampPoint(event.button.x, event.button.y);
 
         for (size_t i = 0; i < beziers.size(); ++i)
         {
@@ -433,7 +449,7 @@ void bezierDragHandler(SDL_Event event)
 
     if (event.type == SDL_MOUSEMOTION && draggingBezierIndex != -1)
     {
-        beziers[draggingBezierIndex].setPoint(draggingPointIndex, Point(event.motion.x, event.motion.y));
+        beziers[draggingBezierIndex].setPoint(draggingPointIndex, clampPoint(event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONUP)
@@ -477,7 +493,7 @@ void fillHandler(SDL_Event event)
     if (event.type != SDL_MOUSEBUTTONDOWN || event.button.button != SDL_BUTTON_LEFT)
         return;
 
-    Point clicked = Point(event.button.x, event.button.y);
+    Point clicked = clampPoint(event.button.x, event.button.y);
     Color fillColor = Color(220, 40, 40);
 
     for (int i = (int)circles.size() - 1; i >= 0; i--)
