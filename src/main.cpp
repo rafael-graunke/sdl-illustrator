@@ -63,29 +63,28 @@ std::vector<ToolboxItem> toolboxItems = {
     {ToolType::Fill, 10, 400},
 };
 
-// fonte bitmap 5x7: cada linha da letra e um byte, cada bit e um pixel (1 = aceso, 0 = apagado)
 //https://voxelmanip.se/2025/01/16/drawing-text-in-the-sdl-renderer-without-sdl-ttf/
-uint8_t letraS[7] = {0b01110, 0b10001, 0b10000, 0b01110, 0b00001, 0b10001, 0b01110};
-uint8_t letraL[7] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111};
-uint8_t letraR[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001};
-uint8_t letraP[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000};
-uint8_t letraC[7] = {0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111};
-uint8_t letraB[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110};
-uint8_t letraF[7] = {0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000};
+uint8_t iconeSelect[7]    = {0b10000, 0b11000, 0b10100, 0b10010, 0b10001, 0b00101, 0b00010}; // cursor
+uint8_t iconeLine[7]      = {0b10000, 0b01000, 0b01000, 0b00100, 0b00010, 0b00010, 0b00001}; // diagonal
+uint8_t iconeRectangle[7] = {0b11111, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11111}; // contorno
+uint8_t iconePolygon[7]   = {0b00100, 0b00100, 0b01010, 0b01010, 0b10001, 0b10001, 0b11111}; // triangulo
+uint8_t iconeCircle[7]    = {0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110}; // circulo
+uint8_t iconeBezier[7]    = {0b11000, 0b00100, 0b00100, 0b00010, 0b00010, 0b00100, 0b00100}; // curva
+uint8_t iconeFill[7]      = {0b11111, 0b11111, 0b11111, 0b00100, 0b00100, 0b00010, 0b00001}; // balde (tentativa de balde)
 
 void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int r, int g, int b)
 {
-    uint8_t *letra;
+    uint8_t *icone;
 
     switch (tool)
     {
-        case ToolType::Select: letra = letraS; break;
-        case ToolType::Line: letra = letraL; break;
-        case ToolType::Rectangle: letra = letraR; break;
-        case ToolType::Polygon: letra = letraP; break;
-        case ToolType::Circle: letra = letraC; break;
-        case ToolType::Bezier: letra = letraB; break;
-        case ToolType::Fill: letra = letraF; break;
+        case ToolType::Select: icone = iconeSelect; break;
+        case ToolType::Line: icone = iconeLine; break;
+        case ToolType::Rectangle: icone = iconeRectangle; break;
+        case ToolType::Polygon: icone = iconePolygon; break;
+        case ToolType::Circle: icone = iconeCircle; break;
+        case ToolType::Bezier: icone = iconeBezier; break;
+        case ToolType::Fill: icone = iconeFill; break;
     }
 
     for (int row = 0; row < 7; row++)
@@ -93,7 +92,7 @@ void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int 
         for (int col = 0; col < 5; col++)
         {
             // testa o bit da coluna (5 bits, do mais significativo pro menos significativo)
-            int bit = (letra[row] >> (4 - col)) & 1;
+            int bit = (icone[row] >> (4 - col)) & 1;
             if (bit == 0)
                 continue;
 
@@ -635,7 +634,7 @@ void selectHandler(SDL_Event event)
 {
     if (currentTool != ToolType::Select)
         return;
-    
+
     if (gizmo != nullptr) {
         if (gizmoHandler(event))
             return;
