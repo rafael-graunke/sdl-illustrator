@@ -31,6 +31,6 @@ class Circle
         Point center;
         int radius;
         Color color;
-        Color fillColor = Color(0, 0, 0);
+        Color fillColor = Color(0, 0, 0, 0);
 
 };
