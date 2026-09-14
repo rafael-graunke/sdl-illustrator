@@ -89,6 +89,15 @@ void Circle::translate(int dx, int dy)
     this->center.translate(dx, dy);
 }
 
+void Circle::scale(double factor)
+{
+    int newRadius = (int)(this->radius * factor);
+    if (newRadius < 1)
+        newRadius = 1;
+
+    this->radius = newRadius;
+}
+
 int Circle::getMinX()
 {
     return this->center.getX() - radius;

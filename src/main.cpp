@@ -566,6 +566,15 @@ void fillHandler(SDL_Event event)
 
 Point *translateStart = nullptr;
 bool isTranslating = false;
+bool isScaling = false;
+double scaleDistPrev = 0;
+
+double distanceToCircleCenter(Point p)
+{
+    int cx = (selectedCircle->getMinX() + selectedCircle->getMaxX()) / 2;
+    int cy = (selectedCircle->getMinY() + selectedCircle->getMaxY()) / 2;
+    return std::sqrt(std::pow(p.getX() - cx, 2) + std::pow(p.getY() - cy, 2));
+}
 
 bool gizmoHandler(SDL_Event event) {
     // Retorna false quando o evento deve passar pros proximos handler
@@ -575,15 +584,29 @@ bool gizmoHandler(SDL_Event event) {
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
     {
         bool intersect = false;
+        bool hitHandle = false;
+
         for (Polygon corner : gizmo->getCorners()) {
             if (corner.contains(clicked))
-                intersect = true;
+                hitHandle = true;
         }
         for (Polygon edge : gizmo->getEdges()) {
             if (edge.contains(clicked))
-                intersect = true;
+                hitHandle = true;
         }
-        if (gizmo->getContour().contains(clicked))
+
+        if (hitHandle && selectedCircle != nullptr)
+        {
+            // arrastar uma alca do gizmo redimensiona o circulo
+            intersect = true;
+            isScaling = true;
+            scaleDistPrev = distanceToCircleCenter(clicked);
+        }
+        else if (hitHandle)
+        {
+            intersect = true; // mantem circulo selecionado
+        }
+        else if (gizmo->getContour().contains(clicked))
         {
             intersect = true;
             isTranslating = true;
@@ -620,10 +643,29 @@ bool gizmoHandler(SDL_Event event) {
             selectedPolygon->translate(dx, dy);
     }
 
+    if (event.type == SDL_MOUSEMOTION && isScaling && selectedCircle != nullptr) {
+        double dist = distanceToCircleCenter(clicked);
+
+        if (scaleDistPrev > 0)
+            selectedCircle->scale(dist / scaleDistPrev);
+
+        scaleDistPrev = dist;
+
+        delete gizmo;
+        gizmo = new Gizmo(
+            selectedCircle->getMinX(),
+            selectedCircle->getMaxX(),
+            selectedCircle->getMinY(),
+            selectedCircle->getMaxY()
+        );
+    }
+
     if (event.type == SDL_MOUSEBUTTONUP) {
         delete translateStart;
         translateStart = nullptr;
         isTranslating = false;
+        isScaling = false;
+        scaleDistPrev = 0;
     }
 
     return true;

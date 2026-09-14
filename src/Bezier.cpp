@@ -52,7 +52,7 @@ int Bezier::nearestPoint(Point mouse, int threshold)
 void Bezier::draw()
 {
     if (controlPoints.size() < 4)
-        return; // Need at least 4 control points for a cubic Bezier curve
+        return; //4 control points for a cubic Bezier curve
 
     Point p0 = controlPoints[0];
     Point p1 = controlPoints[1];
