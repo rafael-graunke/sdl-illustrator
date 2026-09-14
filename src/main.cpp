@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <vector>
 #include <cstdint>
+#include <iostream>
 
 #include <Context.h>
 #include <Color.h>
@@ -12,6 +13,7 @@
 #include <Polygon.h>
 #include <Circle.h>
 #include <Bezier.h>
+#include <Gizmo.h>
 #include <cmath>
 
 // SDL stuff
@@ -27,9 +29,15 @@ std::vector<Polygon> polygons;
 std::vector<Bezier> beziers;
 std::vector<Circle> circles;
 
+Line *selectedLine = nullptr;
+Polygon *selectedPolygon = nullptr;
+Circle *selectedCircle = nullptr;
+
+Gizmo *gizmo = nullptr;
 
 enum class ToolType
 {
+    Select,
     Line,
     Rectangle,
     Polygon,
@@ -37,7 +45,7 @@ enum class ToolType
     Bezier,
     Fill
 };
-ToolType currentTool = ToolType::Line;
+ToolType currentTool = ToolType::Select;
 
 struct ToolboxItem
 {
@@ -46,16 +54,18 @@ struct ToolboxItem
 };
 
 std::vector<ToolboxItem> toolboxItems = {
-    {ToolType::Line, 10, 10},
-    {ToolType::Rectangle, 10, 80},
-    {ToolType::Polygon, 10, 150},
-    {ToolType::Circle, 10, 220},
-    {ToolType::Bezier, 10, 290},
-    {ToolType::Fill, 10, 360}
+    {ToolType::Select, 10, 10},
+    {ToolType::Line, 10, 75},
+    {ToolType::Rectangle, 10, 140},
+    {ToolType::Polygon, 10, 205},
+    {ToolType::Circle, 10, 270},
+    {ToolType::Bezier, 10, 335},
+    {ToolType::Fill, 10, 400},
 };
 
 // fonte bitmap 5x7: cada linha da letra e um byte, cada bit e um pixel (1 = aceso, 0 = apagado)
 //https://voxelmanip.se/2025/01/16/drawing-text-in-the-sdl-renderer-without-sdl-ttf/
+uint8_t letraS[7] = {0b01110, 0b10001, 0b10000, 0b01110, 0b00001, 0b10001, 0b01110};
 uint8_t letraL[7] = {0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111};
 uint8_t letraR[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001};
 uint8_t letraP[7] = {0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000};
@@ -69,6 +79,7 @@ void drawGlyph(Line &l, ToolType tool, int originX, int originY, int scale, int 
 
     switch (tool)
     {
+        case ToolType::Select: letra = letraS; break;
         case ToolType::Line: letra = letraL; break;
         case ToolType::Rectangle: letra = letraR; break;
         case ToolType::Polygon: letra = letraP; break;
@@ -467,7 +478,7 @@ void bezierPlacingHandler(SDL_Event event)
 
 void bezierDragHandler(SDL_Event event)
 {
-    if (currentTool != ToolType::Bezier)
+    if (currentTool != ToolType::Select)
         return;
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
@@ -554,6 +565,125 @@ void fillHandler(SDL_Event event)
     }
 }
 
+Point *translateStart = nullptr;
+bool isTranslating = false;
+
+bool gizmoHandler(SDL_Event event) {
+    // Retorna false quando o evento deve passar pros proximos handler
+
+    Point clicked = clampPoint(event.button.x, event.button.y);
+
+    if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+    {
+        bool intersect = false;
+        for (Polygon corner : gizmo->getCorners()) {
+            if (corner.contains(clicked))
+                intersect = true;
+        }
+        for (Polygon edge : gizmo->getEdges()) {
+            if (edge.contains(clicked))
+                intersect = true;
+        }
+        if (gizmo->getContour().contains(clicked))
+        {
+            intersect = true;
+            isTranslating = true;
+            if (translateStart == nullptr)
+                translateStart = new Point(clicked.getX(), clicked.getY());
+        }
+
+        if (!intersect)
+        {
+            delete gizmo;
+            delete translateStart;
+            gizmo = nullptr;
+            translateStart = nullptr;
+
+            selectedLine = nullptr;
+            selectedPolygon = nullptr;
+            selectedCircle = nullptr;
+
+            return false;
+        }
+    }
+
+    if (event.type == SDL_MOUSEMOTION && isTranslating) {
+        int dx = clicked.getX() - translateStart->getX();
+        int dy = clicked.getY() - translateStart->getY();
+        gizmo->translate(dx, dy);
+        delete translateStart;
+        translateStart = new Point(clicked.getX(), clicked.getY());
+
+        if (selectedCircle != nullptr)
+            selectedCircle->translate(dx, dy);
+
+        if (selectedPolygon != nullptr)
+            selectedPolygon->translate(dx, dy);
+    }
+
+    if (event.type == SDL_MOUSEBUTTONUP) {
+        delete translateStart;
+        translateStart = nullptr;
+        isTranslating = false;
+    }
+
+    return true;
+}
+
+
+void selectHandler(SDL_Event event)
+{
+    if (currentTool != ToolType::Select)
+        return;
+    
+    if (gizmo != nullptr) {
+        if (gizmoHandler(event))
+            return;
+    }
+
+    if (event.type != SDL_MOUSEBUTTONDOWN || event.button.button != SDL_BUTTON_LEFT)
+        return;
+
+    Point clicked = clampPoint(event.button.x, event.button.y);
+
+    for (int i = (int)circles.size() - 1; i >= 0; i--)
+    {
+        if (circles[i].contains(clicked))
+        {
+            selectedCircle = &circles[i];
+            gizmo = new Gizmo(
+                selectedCircle->getMinX(),
+                selectedCircle->getMaxX(),
+                selectedCircle->getMinY(),
+                selectedCircle->getMaxY()
+            );
+            return;
+        }
+    }
+
+    for (int i = (int)polygons.size() - 1; i >= 0; i--)
+    {
+        if (polygons[i].contains(clicked))
+        {
+            selectedPolygon = &polygons[i];
+            gizmo = new Gizmo(
+                selectedPolygon->getMinX(),
+                selectedPolygon->getMaxX(),
+                selectedPolygon->getMinY(),
+                selectedPolygon->getMaxY()
+            );
+            return;
+        }
+    }
+
+    selectedLine = nullptr;
+    selectedPolygon = nullptr;
+    selectedCircle = nullptr;
+    delete gizmo;
+    gizmo = nullptr;
+}
+
+
 void update()
 {
     SDL_Event event;
@@ -572,6 +702,7 @@ void update()
         bezierDragHandler(event);
         bezierPlacingHandler(event);
         fillHandler(event);
+        selectHandler(event);
 
 
         if(event.type == SDL_KEYDOWN)
@@ -584,6 +715,9 @@ void update()
 
             switch (event.key.keysym.sym)
             {
+            case SDLK_s:
+                currentTool = ToolType::Select;
+                break;
             case SDLK_l:
                 currentTool = ToolType::Line;
                 break;
@@ -637,12 +771,16 @@ void render()
     renderBezierPreview();
     renderBezierGuides();
 
+    if (gizmo != nullptr)
+        gizmo->draw();
+
     if (cleanCanvas)
         SDL_FreeSurface(cleanCanvas);
     cleanCanvas = SDL_ConvertSurface(window_surface, window_surface->format, 0);
 
     drawToolbox();
     SDL_UpdateWindowSurface(pWindow);
+
 }
 
 int main(int argc, char *args[])

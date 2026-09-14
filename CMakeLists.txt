@@ -14,6 +14,7 @@ set(SOURCES
     src/Polygon.cpp
     src/Circle.cpp
     src/Bezier.cpp
+    src/Gizmo.cpp
     src/drawing.cpp
 )
 

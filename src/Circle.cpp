@@ -52,7 +52,7 @@ void displayBresenhamCircle(int xc,int yc, int x, int y, Color color) {
 
 void Circle::draw()
 {
-    if (this->filled)
+    if (this->fillColor.getA())
         scanFillCircle(this->center, this->radius, this->fillColor);
 
     int x = 0, y = radius;
@@ -81,6 +81,30 @@ bool Circle::contains(Point p)
 
 void Circle::setFill(Color fillColor)
 {
-    this->filled = true;
     this->fillColor = fillColor;
+}
+
+void Circle::translate(int dx, int dy)
+{
+    this->center.translate(dx, dy);
+}
+
+int Circle::getMinX()
+{
+    return this->center.getX() - radius;
+}
+
+int Circle::getMaxX()
+{
+    return this->center.getX() + radius;
+}
+
+int Circle::getMinY()
+{
+    return this->center.getY() - radius;
+}
+
+int Circle::getMaxY()
+{
+    return this->center.getY() + radius;
 }

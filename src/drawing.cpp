@@ -20,7 +20,7 @@ void setPixel(int x, int y, int r, int g, int b) {
 }
 
 void setPixel(int x, int y, Color color) {
-	setPixel(x, y, color.getR(),color.getG(),color.getB());
+	setPixel(x, y, color.getR(),color.getG(),color.getB(), color.getA());
 }
 
 void setPixel(int x, int y, Uint32 cor) {

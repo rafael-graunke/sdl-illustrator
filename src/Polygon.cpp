@@ -2,6 +2,7 @@
 #include "Line.h"
 #include "drawing.h"
 #include <algorithm>
+#include <climits>
 
 void scanFillPolygon(std::vector<Point> vertices, Color color)
 {
@@ -52,6 +53,7 @@ void scanFillPolygon(std::vector<Point> vertices, Color color)
 Polygon::Polygon() : color(Color(0, 0, 0)) {}
 
 Polygon::Polygon(std::vector<Point> vertices, Color color) : vertices(vertices), color(color) {}
+Polygon::Polygon(std::vector<Point> vertices, Color color, Color fillColor) : vertices(vertices), color(color), fillColor(fillColor) {}
 
 Polygon::~Polygon() {}
 
@@ -65,7 +67,7 @@ void Polygon::draw()
     if (this->vertices.size() < 2)
         return;
 
-    if (this->filled)
+    if (this->fillColor.getA())
         scanFillPolygon(this->vertices, this->fillColor);
 
     Point primeiro = this->vertices.front();
@@ -115,6 +117,59 @@ bool Polygon::contains(Point p)
 
 void Polygon::setFill(Color fillColor)
 {
-    this->filled = true;
     this->fillColor = fillColor;
+}
+
+int Polygon::getMinX() {
+    int min = INT_MAX; // Começa no maior int possivel
+
+    for (Point point: this->vertices) {
+        if (point.getX() < min) {
+            min = point.getX();
+        }
+    }
+
+    return min;
+}
+
+int Polygon::getMaxX() {
+    int max = -1;
+
+    for (Point point: this->vertices) {
+        if (point.getX() > max) {
+            max = point.getX();
+        }
+    }
+
+    return max;
+}
+
+int Polygon::getMinY() {
+    int min = INT_MAX; // Começa no maior int possivel
+
+    for (Point point: this->vertices) {
+        if (point.getY() < min) {
+            min = point.getY();
+        }
+    }
+
+    return min;
+}
+
+int Polygon::getMaxY() {
+    int max = -1;
+
+    for (Point point: this->vertices) {
+        if (point.getY() > max) {
+            max = point.getY();
+        }
+    }
+
+    return max;
+}
+
+void Polygon::translate(int dx, int dy) {
+    for (Point& point: this->vertices) {
+        point.translate(dx, dy);
+    }
 }

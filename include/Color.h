@@ -16,6 +16,7 @@ class Color
         Uint8 getR();
         Uint8 getG();
         Uint8 getB();
+        Uint8 getA();
         virtual ~Color();
 
     protected:

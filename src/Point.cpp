@@ -16,6 +16,11 @@ Point::~Point()
     //dtor
 }
 
+void Point::translate(int dx, int dy)
+{
+    this->x += dx;
+    this->y += dy;
+}
 
 int Point::getX()
 {

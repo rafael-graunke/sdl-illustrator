@@ -48,6 +48,10 @@ Uint8 Color::getB()
 {
     return this->b;
 }
+Uint8 Color::getA()
+{
+    return this->a;
+}
 
 Uint32 Color::RGB(int r, int g, int b) {
 
