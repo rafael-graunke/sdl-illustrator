@@ -208,6 +208,45 @@ Point clampPoint(int x, int y)
     return Point(x, y);
 }
 
+Point drakopoulosClip(Point origin, int rawX, int rawY)
+{
+    SDL_Surface *window_surface = Context::getInstance()->getWindowSurface();
+    double xmin = 0, ymin = 0;
+    double xmax = window_surface->w - 1;
+    double ymax = window_surface->h - 1;
+
+    double x1 = origin.getX(), y1 = origin.getY();
+    double x2 = rawX, y2 = rawY; // ponto cru do mouse
+
+    if (x2 < xmin)
+    {
+        // saiu pela esquerda
+        y2 = y1 + (y2 - y1) / (x2 - x1) * (xmin - x1);
+        x2 = xmin;
+    }
+    else if (x2 > xmax)
+    {
+        // saiu pela direita
+        y2 = y1 + (y2 - y1) / (x2 - x1) * (xmax - x1);
+        x2 = xmax;
+    }
+
+    if (y2 < ymin)
+    {
+        // saiu por cima
+        x2 = x1 + (x2 - x1) / (y2 - y1) * (ymin - y1);
+        y2 = ymin;
+    }
+    else if (y2 > ymax)
+    {
+        // saiu por baixo
+        x2 = x1 + (x2 - x1) / (y2 - y1) * (ymax - y1);
+        y2 = ymax;
+    }
+
+    return Point((int)x2, (int)y2);
+}
+
 Point *firstPoint = nullptr;
 Point *secondPoint = nullptr;
 
@@ -224,14 +263,14 @@ void drawLineHandler(SDL_Event event)
     if (event.type == SDL_MOUSEMOTION && firstPoint != nullptr)
     {
         delete secondPoint;
-        secondPoint = new Point(clampPoint(event.motion.x, event.motion.y));
+        secondPoint = new Point(drakopoulosClip(*firstPoint, event.motion.x, event.motion.y));
     }
 
     if (event.type == SDL_MOUSEBUTTONUP)
     {
         if (firstPoint != nullptr)
         {
-            Line line = Line(*firstPoint, clampPoint(event.button.x, event.button.y), Color(0, 0, 0));
+            Line line = Line(*firstPoint, drakopoulosClip(*firstPoint, event.button.x, event.button.y), Color(0, 0, 0));
             lines.push_back(line);
             delete firstPoint;
             firstPoint = nullptr;

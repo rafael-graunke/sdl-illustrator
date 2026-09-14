@@ -1,5 +1,5 @@
 #include "Bezier.h"
-#include "drawing.h"
+#include "Line.h"
 #include <cmath>
 
 Bezier::Bezier() {}
@@ -59,10 +59,16 @@ void Bezier::draw()
     Point p2 = controlPoints[2];
     Point p3 = controlPoints[3];
 
-    for (double t = 0; t <= 1; t += 0.01)
+    Point previous = p0;
+
+    for (double t = 0.01; t <= 1; t += 0.01)
     {
         double x = pow(1 - t, 3) * p0.getX() + 3 * pow(1 - t, 2) * t * p1.getX() + 3 * (1 - t) * pow(t, 2) * p2.getX() + pow(t, 3) * p3.getX();
         double y = pow(1 - t, 3) * p0.getY() + 3 * pow(1 - t, 2) * t * p1.getY() + 3 * (1 - t) * pow(t, 2) * p2.getY() + pow(t, 3) * p3.getY();
-        setPixel(static_cast<int>(x), static_cast<int>(y), color);
+
+        //desenha do inicio ao fim.
+        Point current(static_cast<int>(x), static_cast<int>(y));
+        Line(previous, current, color).draw();
+        previous = current;
     }
 }
