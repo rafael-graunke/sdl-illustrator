@@ -566,47 +566,47 @@ void fillHandler(SDL_Event event)
 
 Point *translateStart = nullptr;
 bool isTranslating = false;
-bool isScaling = false;
-double scaleDistPrev = 0;
 
-double distanceToCircleCenter(Point p)
-{
-    int cx = (selectedCircle->getMinX() + selectedCircle->getMaxX()) / 2;
-    int cy = (selectedCircle->getMinY() + selectedCircle->getMaxY()) / 2;
-    return std::sqrt(std::pow(p.getX() - cx, 2) + std::pow(p.getY() - cy, 2));
-}
+bool isScaling = false;
+Point *scalingStart = nullptr;
+Polygon scalingOriginal;
+Circle scalingOriginalCircle;
+Point scalingCenter;
 
 bool gizmoHandler(SDL_Event event) {
     // Retorna false quando o evento deve passar pros proximos handler
 
-    Point clicked = clampPoint(event.button.x, event.button.y);
+    Point clicked = event.type == SDL_MOUSEMOTION
+        ? clampPoint(event.motion.x, event.motion.y)
+        : clampPoint(event.button.x, event.button.y);
 
     if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
     {
         bool intersect = false;
-        bool hitHandle = false;
 
         for (Polygon corner : gizmo->getCorners()) {
             if (corner.contains(clicked))
-                hitHandle = true;
+            {
+                intersect = true;
+                isScaling = true;
+                if (scalingStart == nullptr)
+                {
+                    scalingStart = new Point(clicked.getX(), clicked.getY());
+                    scalingCenter = gizmo->getCenter();
+
+                    if (selectedPolygon != nullptr)
+                        scalingOriginal = *selectedPolygon;
+
+                    if (selectedCircle != nullptr)
+                        scalingOriginalCircle = *selectedCircle;
+                }
+            }
         }
         for (Polygon edge : gizmo->getEdges()) {
             if (edge.contains(clicked))
-                hitHandle = true;
+                intersect = true;
         }
-
-        if (hitHandle && selectedCircle != nullptr)
-        {
-            // arrastar uma alca do gizmo redimensiona o circulo
-            intersect = true;
-            isScaling = true;
-            scaleDistPrev = distanceToCircleCenter(clicked);
-        }
-        else if (hitHandle)
-        {
-            intersect = true; // mantem circulo selecionado
-        }
-        else if (gizmo->getContour().contains(clicked))
+        if (!isScaling && gizmo->getContour().contains(clicked))
         {
             intersect = true;
             isTranslating = true;
@@ -629,43 +629,68 @@ bool gizmoHandler(SDL_Event event) {
         }
     }
 
-    if (event.type == SDL_MOUSEMOTION && isTranslating) {
-        int dx = clicked.getX() - translateStart->getX();
-        int dy = clicked.getY() - translateStart->getY();
-        gizmo->translate(dx, dy);
-        delete translateStart;
-        translateStart = new Point(clicked.getX(), clicked.getY());
+    if (event.type == SDL_MOUSEMOTION) {
+        if (isTranslating) {
+            int dx = clicked.getX() - translateStart->getX();
+            int dy = clicked.getY() - translateStart->getY();
+            gizmo->translate(dx, dy);
+            delete translateStart;
+            translateStart = new Point(clicked.getX(), clicked.getY());
 
-        if (selectedCircle != nullptr)
-            selectedCircle->translate(dx, dy);
+            if (selectedCircle != nullptr)
+                selectedCircle->translate(dx, dy);
 
-        if (selectedPolygon != nullptr)
-            selectedPolygon->translate(dx, dy);
-    }
+            if (selectedPolygon != nullptr)
+                selectedPolygon->translate(dx, dy);
+        }
+        else if (isScaling && selectedPolygon != nullptr) {
+            // Baseado no quando o mouse se moveu, tem que entender se a distancia pro centrou aumentou
+            // Se diminui, a escala reduz, se não aumenta
+            double startDistance = scalingCenter.distance(*scalingStart);
+            if (startDistance == 0)
+                return true;
 
-    if (event.type == SDL_MOUSEMOTION && isScaling && selectedCircle != nullptr) {
-        double dist = distanceToCircleCenter(clicked);
+            double factor = scalingCenter.distance(clicked) / startDistance;
 
-        if (scaleDistPrev > 0)
-            selectedCircle->scale(dist / scaleDistPrev);
+            *selectedPolygon = scalingOriginal;
+            selectedPolygon->scale(factor);
 
-        scaleDistPrev = dist;
+            delete gizmo;
+            gizmo = new Gizmo(
+                selectedPolygon->getMinX(),
+                selectedPolygon->getMaxX(),
+                selectedPolygon->getMinY(),
+                selectedPolygon->getMaxY()
+            );
+        }
+        else if (isScaling && selectedCircle != nullptr) {
+            double startDistance = scalingCenter.distance(*scalingStart);
+            if (startDistance == 0)
+                return true;
 
-        delete gizmo;
-        gizmo = new Gizmo(
-            selectedCircle->getMinX(),
-            selectedCircle->getMaxX(),
-            selectedCircle->getMinY(),
-            selectedCircle->getMaxY()
-        );
+            double factor = scalingCenter.distance(clicked) / startDistance;
+
+            *selectedCircle = scalingOriginalCircle;
+            selectedCircle->scale(factor);
+
+            delete gizmo;
+            gizmo = new Gizmo(
+                selectedCircle->getMinX(),
+                selectedCircle->getMaxX(),
+                selectedCircle->getMinY(),
+                selectedCircle->getMaxY()
+            );
+        }
     }
 
     if (event.type == SDL_MOUSEBUTTONUP) {
         delete translateStart;
         translateStart = nullptr;
         isTranslating = false;
+
+        delete scalingStart;
+        scalingStart = nullptr;
         isScaling = false;
-        scaleDistPrev = 0;
     }
 
     return true;

@@ -17,7 +17,8 @@ class Gizmo
         void scale(double factor);
 
         void draw();
-
+        
+        Point getCenter();
         Polygon getContour();
         std::vector<Polygon> getCorners();
         std::vector<Polygon> getEdges();

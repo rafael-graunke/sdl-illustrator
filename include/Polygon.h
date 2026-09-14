@@ -21,6 +21,7 @@ class Polygon
         void translate(int dx, int dy);
         void rotate(double angle);
         void scale(double factor);
+        void scale(double factorX, double factorY);
         void addVertex(Point vertex);
         void draw();
         Point getFirstVertex();

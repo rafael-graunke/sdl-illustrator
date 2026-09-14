@@ -76,6 +76,28 @@ void Gizmo::translate(int dx, int dy)
     }
 }
 
+void Gizmo::scale(double factor) {
+    this->contour.scale(factor);
+
+    // for (Polygon& pol : this->corners)
+    // {
+    //     pol.scale(factor);
+    // }
+
+    // for (Polygon& pol : this->edges)
+    // {
+    //     pol.scale(factor);
+    // }
+}
+
+Point Gizmo::getCenter() {
+    Polygon contour = this->contour;
+    return Point(
+        (contour.getMaxX() + contour.getMinX()) / 2,
+        (contour.getMaxY() + contour.getMinY()) / 2
+    );
+}
+
 void Gizmo::draw()
 {
     this->contour.draw();

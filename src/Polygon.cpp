@@ -3,6 +3,7 @@
 #include "drawing.h"
 #include <algorithm>
 #include <climits>
+#include <cmath>
 
 void scanFillPolygon(std::vector<Point> vertices, Color color)
 {
@@ -171,5 +172,19 @@ int Polygon::getMaxY() {
 void Polygon::translate(int dx, int dy) {
     for (Point& point: this->vertices) {
         point.translate(dx, dy);
+    }
+}
+
+void Polygon::scale(double factor) {
+    this->scale(factor, factor);
+}
+
+void Polygon::scale(double factorX, double factorY) {
+    double centralX = (this->getMaxX() + this->getMinX()) / 2.0;
+    double centralY = (this->getMaxY() + this->getMinY()) / 2.0;
+
+    for (Point& point : this->vertices) {
+        point.setX(std::lround(centralX + (point.getX() - centralX) * factorX));
+        point.setY(std::lround(centralY + (point.getY() - centralY) * factorY));
     }
 }
